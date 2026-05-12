@@ -2,19 +2,16 @@
 SermonFlow — Planning Center Online API client.
 
 Auth: HTTP Basic with PAT (app_id + secret).
-Set PCO_APP_ID and PCO_SECRET in a .env file or environment.
+Export PCO_ID and PCO_SECRET in your shell (e.g. ~/.zshrc).
 """
 
 import os
 from datetime import date, timedelta
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 BASE_URL = "https://api.planningcenteronline.com"
-APP_ID = os.environ["PCO_APP_ID"]
-SECRET = os.environ["PCO_SECRET"]
+APP_ID = os.environ.get("PCO_ID") or exit("PCO_ID not set in environment")
+SECRET = os.environ.get("PCO_SECRET") or exit("PCO_SECRET not set in environment")
 AUTH = (APP_ID, SECRET)
 
 
@@ -22,9 +19,12 @@ AUTH = (APP_ID, SECRET)
 # HTTP helpers
 # ---------------------------------------------------------------------------
 
+
 def _get(path: str, params: dict = None) -> dict:
     url = BASE_URL + path
     resp = requests.get(url, auth=AUTH, params=params)
+    if not resp.ok:
+        print(f"HTTP {resp.status_code}: {resp.text}")
     resp.raise_for_status()
     return resp.json()
 
@@ -38,13 +38,14 @@ def _get_all(path: str, params: dict = None) -> list:
         payload = _get(path, params)
         results.extend(payload.get("data", []))
         path = payload.get("links", {}).get("next")
-        params = {}          # next link already encodes params
+        params = {}  # next link already encodes params
     return results
 
 
 # ---------------------------------------------------------------------------
 # Service types
 # ---------------------------------------------------------------------------
+
 
 def get_service_types() -> list:
     """Return all service types."""
@@ -64,6 +65,7 @@ def find_service_type(name_fragment: str) -> dict | None:
 # Plans
 # ---------------------------------------------------------------------------
 
+
 def get_future_plans(service_type_id: str) -> list:
     """Return upcoming plans for a service type, sorted ascending."""
     return _get_all(
@@ -79,7 +81,7 @@ def get_next_sunday_plan(service_type_id: str) -> dict | None:
         return None
 
     today = date.today()
-    days_until_sunday = (6 - today.weekday()) % 7 or 7   # weekday: Mon=0 Sun=6
+    days_until_sunday = (6 - today.weekday()) % 7 or 7  # weekday: Mon=0 Sun=6
     next_sunday = today + timedelta(days=days_until_sunday)
 
     for plan in plans:
@@ -89,7 +91,7 @@ def get_next_sunday_plan(service_type_id: str) -> dict | None:
             if plan_date >= next_sunday:
                 return plan
 
-    return plans[0]   # fallback: nearest future plan
+    return plans[0]  # fallback: nearest future plan
 
 
 def get_plan(service_type_id: str, plan_id: str) -> dict:
@@ -99,6 +101,7 @@ def get_plan(service_type_id: str, plan_id: str) -> dict:
 # ---------------------------------------------------------------------------
 # Plan items
 # ---------------------------------------------------------------------------
+
 
 def get_plan_items(service_type_id: str, plan_id: str) -> list:
     """Return all items in service order, with songs included."""
@@ -116,6 +119,7 @@ def extract_songs(items: list) -> list:
 # ---------------------------------------------------------------------------
 # Arrangements & sections (lyrics)
 # ---------------------------------------------------------------------------
+
 
 def get_song_arrangements(song_id: str) -> list:
     return _get_all(f"/services/v2/songs/{song_id}/arrangements")
@@ -160,6 +164,7 @@ def get_song_lyrics(song_id: str, arrangement_id: str = None) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Convenience: full service snapshot
 # ---------------------------------------------------------------------------
+
 
 def get_service_snapshot(service_type_name: str = "sunday") -> dict:
     """
@@ -224,25 +229,31 @@ if __name__ == "__main__":
         raise SystemExit(0)
 
     plan_attrs = plan["attributes"]
-    print(f"  [{plan['id']}] {plan_attrs.get('title') or '(untitled)'} — {plan_attrs.get('sort_date', '')[:10]}")
+    print(
+        f"  [{plan['id']}] {plan_attrs.get('title') or '(untitled)'} — {plan_attrs.get('sort_date', '')[:10]}"
+    )
 
     print("\n=== Plan Items ===")
     items = get_plan_items(st_id, plan["id"])
     for item in items:
         a = item["attributes"]
-        print(f"  seq={a.get('sequence'):>3}  type={a.get('item_type','?'):<10}  {a.get('title','')}")
+        print(
+            f"  seq={a.get('sequence'):>3}  type={a.get('item_type','?'):<10}  {a.get('title','')}"
+        )
 
     print("\n=== Songs with Lyrics ===")
     song_items = extract_songs(items)
     if not song_items:
         print("  No song items in this plan.")
-    for item in song_items[:1]:    # demo: first song only
+    for item in song_items[:1]:  # demo: first song only
         song_id = item["relationships"].get("song", {}).get("data", {}).get("id")
         print(f"  Song: {item['attributes'].get('title','')}  (song_id={song_id})")
         if song_id:
             lyrics = get_song_lyrics(song_id)
             for section in lyrics:
                 print(f"\n    [{section['label']}]")
-                print(f"    {section['lyrics'][:120]}{'...' if len(section['lyrics']) > 120 else ''}")
+                print(
+                    f"    {section['lyrics'][:120]}{'...' if len(section['lyrics']) > 120 else ''}"
+                )
 
     print("\nDone.")
