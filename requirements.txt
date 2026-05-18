@@ -1,6 +1,19 @@
-certifi==2026.4.22
-charset-normalizer==3.4.7
-idna==3.14
-python-dotenv==1.2.2
+# Planning Center API
 requests==2.34.0
-urllib3==2.7.0
+
+# Claude API
+anthropic>=0.40.0
+
+# Google Docs API
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.120.0
+
+# ProPresenter 7 protobuf
+protobuf==6.33.5
+grpcio-tools>=1.62.0
+
+# Review PDF generation
+fpdf2>=2.7.9
+
+# Testing
+pytest>=9.0

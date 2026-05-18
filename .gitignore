@@ -1,2 +1,6 @@
 deps
-.env
+.vscode
+__pycache__
+.pytest_cache
+CLAUDE.md
+__init__.py
