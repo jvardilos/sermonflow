@@ -4,3 +4,11 @@ __pycache__
 .pytest_cache
 CLAUDE.md
 __init__.py
+ProPresenter7-Proto
+pco_types
+credentials.json
+token.json
+.env
+review_slides.pdf
+service_schema.json
+libs

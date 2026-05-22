@@ -14,24 +14,27 @@ from unittest.mock import MagicMock, patch, call
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pco
 
-
 # ---------------------------------------------------------------------------
 # _infer_section_type
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("label,expected", [
-    ("Verse 1",    "verse"),
-    ("VERSE 2",    "verse"),
-    ("Chorus",     "chorus"),
-    ("CHORUS",     "chorus"),
-    ("Bridge",     "bridge"),
-    ("Pre-Chorus", "pre_chorus"),
-    ("Intro",      "intro"),
-    ("Outro",      "outro"),
-    ("Tag",        "tag"),
-    ("Interlude",  "other"),
-    ("",           "other"),
-])
+
+@pytest.mark.parametrize(
+    "label,expected",
+    [
+        ("Verse 1", "verse"),
+        ("VERSE 2", "verse"),
+        ("Chorus", "chorus"),
+        ("CHORUS", "chorus"),
+        ("Bridge", "bridge"),
+        ("Pre-Chorus", "pre_chorus"),
+        ("Intro", "intro"),
+        ("Outro", "outro"),
+        ("Tag", "tag"),
+        ("Interlude", "other"),
+        ("", "other"),
+    ],
+)
 def test_infer_section_type(label, expected):
     assert pco._infer_section_type(label) == expected
 
@@ -39,6 +42,7 @@ def test_infer_section_type(label, expected):
 # ---------------------------------------------------------------------------
 # extract_songs
 # ---------------------------------------------------------------------------
+
 
 def _make_item(item_type: str, title: str = "X") -> dict:
     return {"attributes": {"item_type": item_type, "title": title}}
@@ -68,6 +72,7 @@ def test_extract_songs_no_songs():
 # ---------------------------------------------------------------------------
 # _get (HTTP helper)
 # ---------------------------------------------------------------------------
+
 
 @patch("pco.requests.get")
 def test_get_bare_path(mock_get):
@@ -117,10 +122,11 @@ def test_get_raises_on_error(mock_get):
 # _get_all (pagination)
 # ---------------------------------------------------------------------------
 
+
 @patch("pco._get")
 def test_get_all_single_page(mock_get):
     mock_get.return_value = {
-        "data":  [{"id": "1"}, {"id": "2"}],
+        "data": [{"id": "1"}, {"id": "2"}],
         "links": {},
     }
     result = pco._get_all("/some/path")
@@ -131,11 +137,11 @@ def test_get_all_single_page(mock_get):
 @patch("pco._get")
 def test_get_all_multiple_pages(mock_get):
     page1 = {
-        "data":  [{"id": "1"}],
+        "data": [{"id": "1"}],
         "links": {"next": "https://api.pco.app/page2"},
     }
     page2 = {
-        "data":  [{"id": "2"}, {"id": "3"}],
+        "data": [{"id": "2"}, {"id": "3"}],
         "links": {},
     }
     mock_get.side_effect = [page1, page2]
@@ -159,13 +165,14 @@ def test_get_all_respects_existing_per_page(mock_get):
 # _get_all_with_included
 # ---------------------------------------------------------------------------
 
+
 @patch("pco._get")
 def test_get_all_with_included_builds_index(mock_get):
     mock_get.return_value = {
         "data": [{"id": "item-1", "type": "Item"}],
         "included": [
-            {"type": "Song",        "id": "song-1", "attributes": {}},
-            {"type": "Arrangement", "id": "arr-1",  "attributes": {}},
+            {"type": "Song", "id": "song-1", "attributes": {}},
+            {"type": "Arrangement", "id": "arr-1", "attributes": {}},
         ],
         "links": {},
     }
@@ -180,14 +187,14 @@ def test_get_all_with_included_builds_index(mock_get):
 def test_get_all_with_included_merges_pages(mock_get):
     mock_get.side_effect = [
         {
-            "data":     [{"id": "1", "type": "Item"}],
+            "data": [{"id": "1", "type": "Item"}],
             "included": [{"type": "Song", "id": "s1", "attributes": {}}],
-            "links":    {"next": "https://pco/page2"},
+            "links": {"next": "https://pco/page2"},
         },
         {
-            "data":     [{"id": "2", "type": "Item"}],
+            "data": [{"id": "2", "type": "Item"}],
             "included": [{"type": "Song", "id": "s2", "attributes": {}}],
-            "links":    {},
+            "links": {},
         },
     ]
     data, included = pco._get_all_with_included("/items")
@@ -200,6 +207,7 @@ def test_get_all_with_included_merges_pages(mock_get):
 # ---------------------------------------------------------------------------
 # find_service_type
 # ---------------------------------------------------------------------------
+
 
 @patch("pco.get_service_types")
 def test_find_service_type_match(mock_get_st):
@@ -237,6 +245,7 @@ def test_find_service_type_empty(mock_get_st):
 # ---------------------------------------------------------------------------
 # get_next_sunday_plan
 # ---------------------------------------------------------------------------
+
 
 def _plan(sort_date: str) -> dict:
     return {"id": sort_date, "attributes": {"sort_date": sort_date + "T00:00:00Z"}}
@@ -281,7 +290,7 @@ def test_get_next_sunday_plan_no_plans(mock_plans):
 @patch("pco.date")
 def test_get_next_sunday_plan_on_sunday(mock_date, mock_plans):
     # Today IS Sunday — the function should return NEXT Sunday, not today
-    mock_date.today.return_value = date(2026, 5, 24)   # a Sunday
+    mock_date.today.return_value = date(2026, 5, 24)  # a Sunday
     mock_date.fromisoformat = date.fromisoformat
     mock_date.side_effect = None
     # days_until_sunday = (6 - 6) % 7 or 7 = 0 or 7 = 7 → next Sunday = 2026-05-31

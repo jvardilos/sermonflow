@@ -10,10 +10,10 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import review
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def minimal_schema():
@@ -68,6 +68,7 @@ def song_schema():
 # generate_pdf
 # ---------------------------------------------------------------------------
 
+
 def test_generate_pdf_creates_file(tmp_path, minimal_schema):
     out = str(tmp_path / "test.pdf")
     result = review.generate_pdf(minimal_schema, out)
@@ -101,12 +102,14 @@ def test_generate_pdf_empty_items(tmp_path):
 def test_generate_pdf_song_without_slides(tmp_path):
     schema = {
         "service": {"plan_title": "Test", "plan_date": "2026-05-24"},
-        "items": [{
-            "sequence": 1,
-            "item_type": "song",
-            "title": "Song",
-            "song": {"sections": [{"label": "V1", "slides": []}]},
-        }],
+        "items": [
+            {
+                "sequence": 1,
+                "item_type": "song",
+                "title": "Song",
+                "song": {"sections": [{"label": "V1", "slides": []}]},
+            }
+        ],
     }
     out = str(tmp_path / "no_slides.pdf")
     review.generate_pdf(schema, out)
@@ -116,6 +119,7 @@ def test_generate_pdf_song_without_slides(tmp_path):
 # ---------------------------------------------------------------------------
 # wait_for_approval
 # ---------------------------------------------------------------------------
+
 
 def test_wait_for_approval_approved(tmp_path, monkeypatch):
     monkeypatch.setattr(review, "_APPROVED_FLAG", tmp_path / "APPROVED")

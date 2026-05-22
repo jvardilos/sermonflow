@@ -22,7 +22,7 @@ import os
 import uuid
 
 try:
-    import propresenter_pb2 as pp7
+    import pco_types.propresenter_pb2 as pp7
 except ImportError:
     raise SystemExit(
         "propresenter_pb2.py not found.\n"
@@ -35,23 +35,22 @@ except ImportError:
         "      ProPresenter7-Proto/Proto/*.proto"
     )
 
-DEFAULT_OUTPUT_DIR = os.path.expanduser(
-    "~/Documents/ProPresenter/Libraries/Default/"
-)
+DEFAULT_OUTPUT_DIR = os.path.expanduser("~/Documents/ProPresenter/Libraries/Default/")
 
 # Default slide dimensions — 1920x1080
-SLIDE_WIDTH  = 1920.0
+SLIDE_WIDTH = 1920.0
 SLIDE_HEIGHT = 1080.0
 
 # Default colors
-BG_BLACK  = (0.0,  0.0,  0.0,  1.0)   # r, g, b, a
-BG_DARK   = (0.08, 0.08, 0.08, 1.0)
-TEXT_WHITE = (1.0,  1.0,  1.0,  1.0)
+BG_BLACK = (0.0, 0.0, 0.0, 1.0)  # r, g, b, a
+BG_DARK = (0.08, 0.08, 0.08, 1.0)
+TEXT_WHITE = (1.0, 1.0, 1.0, 1.0)
 
 
 # ---------------------------------------------------------------------------
 # UUID helpers
 # ---------------------------------------------------------------------------
+
 
 def _new_uuid() -> str:
     return str(uuid.uuid4()).upper()
@@ -67,12 +66,13 @@ def _make_uuid(value: str) -> pp7.UUID:
 # RTF builder
 # ---------------------------------------------------------------------------
 
+
 def _build_rtf(text: str, font_size_pt: int = 60, bold: bool = False) -> bytes:
     """
     Build a minimal RTF string for a PP7 text element.
     Font size in points; RTF uses half-points (\fs = pt * 2).
     """
-    bold_on  = r"\b "  if bold else ""
+    bold_on = r"\b " if bold else ""
     bold_off = r"\b0 " if bold else ""
     # Escape backslash and braces in text
     safe = text.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
@@ -94,18 +94,19 @@ def _build_rtf(text: str, font_size_pt: int = 60, bold: bool = False) -> bytes:
 # Protobuf object builders
 # ---------------------------------------------------------------------------
 
+
 def _make_color(r: float, g: float, b: float, a: float = 1.0) -> pp7.Color:
     c = pp7.Color()
-    c.red   = r
+    c.red = r
     c.green = g
-    c.blue  = b
+    c.blue = b
     c.alpha = a
     return c
 
 
 def _make_size(w: float, h: float) -> pp7.Size:
     s = pp7.Size()
-    s.width  = w
+    s.width = w
     s.height = h
     return s
 
@@ -119,11 +120,11 @@ def _make_text_element(
     elem = pp7.SlideElement()
     elem.uuid.CopyFrom(_make_uuid(_new_uuid()))
     # Full-slide text box centered
-    elem.position.x      = 0.0
-    elem.position.y      = 0.0
-    elem.position.width  = SLIDE_WIDTH
+    elem.position.x = 0.0
+    elem.position.y = 0.0
+    elem.position.width = SLIDE_WIDTH
     elem.position.height = SLIDE_HEIGHT
-    elem.rtf_data        = _build_rtf(text, font_size_pt=font_size_pt, bold=bold)
+    elem.rtf_data = _build_rtf(text, font_size_pt=font_size_pt, bold=bold)
     return elem
 
 
@@ -137,11 +138,15 @@ def _make_slide(
     slide.uuid.CopyFrom(_make_uuid(_new_uuid()))
     slide.size.CopyFrom(_make_size(SLIDE_WIDTH, SLIDE_HEIGHT))
     slide.background_color.CopyFrom(_make_color(*bg_color))
-    slide.elements.append(_make_text_element(text, font_size_pt=font_size_pt, bold=bold))
+    slide.elements.append(
+        _make_text_element(text, font_size_pt=font_size_pt, bold=bold)
+    )
     return slide
 
 
-def _make_cue(slide_text: str, bg_color: tuple = BG_DARK, font_size_pt: int = 60) -> pp7.Cue:
+def _make_cue(
+    slide_text: str, bg_color: tuple = BG_DARK, font_size_pt: int = 60
+) -> pp7.Cue:
     cue = pp7.Cue()
     cue.uuid.CopyFrom(_make_uuid(_new_uuid()))
 
@@ -149,7 +154,7 @@ def _make_cue(slide_text: str, bg_color: tuple = BG_DARK, font_size_pt: int = 60
     action.uuid.CopyFrom(_make_uuid(_new_uuid()))
 
     slide_action = pp7.SlideType()
-    pres_slide   = pp7.PresentationSlide()
+    pres_slide = pp7.PresentationSlide()
     pres_slide.base_slide.CopyFrom(
         _make_slide(slide_text, bg_color=bg_color, font_size_pt=font_size_pt)
     )
@@ -164,17 +169,19 @@ def _make_cue(slide_text: str, bg_color: tuple = BG_DARK, font_size_pt: int = 60
 # CCLI metadata
 # ---------------------------------------------------------------------------
 
+
 def _apply_ccli(presentation: pp7.Presentation, meta: dict) -> None:
-    presentation.ccli_number  = str(meta.get("ccli_number", ""))
-    presentation.title        = meta.get("title", "")
-    presentation.author       = meta.get("author", "")
-    presentation.copyright    = meta.get("copyright", "")
-    presentation.publisher    = meta.get("publisher", "")
+    presentation.ccli_number = str(meta.get("ccli_number", ""))
+    presentation.title = meta.get("title", "")
+    presentation.author = meta.get("author", "")
+    presentation.copyright = meta.get("copyright", "")
+    presentation.publisher = meta.get("publisher", "")
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def build_song_presentation(
     title: str,
@@ -248,7 +255,7 @@ def build_and_save_from_schema(
             continue
 
         title = item.get("title", "unknown")
-        song  = item.get("song", {})
+        song = item.get("song", {})
 
         # Collect all formatted slide texts from all sections
         all_slides = []
@@ -261,9 +268,9 @@ def build_and_save_from_schema(
 
         ccli_meta = {
             "ccli_number": song.get("ccli_number", ""),
-            "author":      song.get("author", ""),
-            "copyright":   song.get("copyright", ""),
-            "publisher":   "",
+            "author": song.get("author", ""),
+            "copyright": song.get("copyright", ""),
+            "publisher": "",
         }
 
         pres = build_song_presentation(title, all_slides, ccli_meta=ccli_meta)

@@ -35,7 +35,7 @@ except ImportError:
 # fpdf works in mm; use 297×167 mm (roughly 16:9 in A4 landscape width)
 SLIDE_W_MM = 270.0
 SLIDE_H_MM = 152.0
-MARGIN_MM  = 13.5
+MARGIN_MM = 13.5
 
 
 class _SlidePDF(FPDF):
@@ -89,11 +89,13 @@ def generate_pdf(schema: dict, output_path: str = "review_slides.pdf") -> str:
     Generate a PDF with one page per slide from the service schema.
     Returns the path to the created PDF.
     """
-    pdf = _SlidePDF(orientation="L", unit="mm", format=(SLIDE_H_MM + 20, SLIDE_W_MM + 20))
+    pdf = _SlidePDF(
+        orientation="L", unit="mm", format=(SLIDE_H_MM + 20, SLIDE_W_MM + 20)
+    )
     pdf.set_auto_page_break(False)
 
     plan_title = schema.get("service", {}).get("plan_title", "Service")
-    plan_date  = schema.get("service", {}).get("plan_date", "")[:10]
+    plan_date = schema.get("service", {}).get("plan_date", "")[:10]
 
     # Title page
     pdf.add_page()
@@ -114,12 +116,13 @@ def generate_pdf(schema: dict, output_path: str = "review_slides.pdf") -> str:
 
     for item in schema.get("items", []):
         item_type = item.get("item_type")
-        title     = item.get("title", "")
+        title = item.get("title", "")
 
         if item_type == "song":
             # Section divider page
             _add_slide_page(
-                pdf, title,
+                pdf,
+                title,
                 label=f"seq {item['sequence']}  ·  SONG",
                 bg_rgb=(15, 15, 50),
                 font_size=32,
@@ -128,7 +131,8 @@ def generate_pdf(schema: dict, output_path: str = "review_slides.pdf") -> str:
             for section in song.get("sections", []):
                 for slide_text in section.get("slides", []):
                     _add_slide_page(
-                        pdf, slide_text,
+                        pdf,
+                        slide_text,
                         label=section.get("label", ""),
                         bg_rgb=(20, 20, 20),
                     )
@@ -137,14 +141,16 @@ def generate_pdf(schema: dict, output_path: str = "review_slides.pdf") -> str:
             sermon_slides = item.get("slides_to_generate", [])
             if sermon_slides:
                 _add_slide_page(
-                    pdf, title,
+                    pdf,
+                    title,
                     label=f"seq {item['sequence']}  ·  SERMON",
                     bg_rgb=(30, 10, 10),
                     font_size=32,
                 )
                 for slide_text in sermon_slides:
                     _add_slide_page(
-                        pdf, slide_text,
+                        pdf,
+                        slide_text,
                         label=title,
                         bg_rgb=(18, 8, 8),
                     )
@@ -157,6 +163,7 @@ def generate_pdf(schema: dict, output_path: str = "review_slides.pdf") -> str:
 # ---------------------------------------------------------------------------
 # Email
 # ---------------------------------------------------------------------------
+
 
 def send_review_email(
     pdf_path: str,
@@ -176,8 +183,8 @@ def send_review_email(
 
     msg = EmailMessage()
     msg["Subject"] = f"[SermonFlow] Review — {plan_title} {plan_date}"
-    msg["From"]    = smtp_user
-    msg["To"]      = to_email
+    msg["From"] = smtp_user
+    msg["To"] = to_email
     msg.set_content(
         f"SermonFlow has prepared slides for {plan_title} ({plan_date}).\n\n"
         "Please review the attached PDF and reply APPROVE or REJECT.\n\n"

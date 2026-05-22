@@ -31,10 +31,10 @@ import os
 import sys
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _step(n: int, label: str) -> None:
     print(f"\n{'='*60}")
@@ -56,6 +56,7 @@ def _save_schema(schema: dict, path: str = "service_schema.json") -> None:
 # Pipeline
 # ---------------------------------------------------------------------------
 
+
 def run(args: argparse.Namespace) -> None:
 
     schema_path = args.schema or "service_schema.json"
@@ -70,6 +71,7 @@ def run(args: argparse.Namespace) -> None:
         schema = _load_schema(args.schema)
     else:
         from pco import build_service_schema
+
         schema = build_service_schema(
             service_type_name=args.service_type,
             save_path=schema_path,
@@ -77,9 +79,11 @@ def run(args: argparse.Namespace) -> None:
 
     svc = schema["service"]
     print(f"Plan: {svc['plan_title']}  ({svc['plan_date'][:10]})")
-    songs   = [i for i in schema["items"] if i["item_type"] == "song"]
+    songs = [i for i in schema["items"] if i["item_type"] == "song"]
     headers = [i for i in schema["items"] if i["item_type"] != "song"]
-    print(f"Items: {len(schema['items'])} total  ({len(songs)} songs, {len(headers)} non-song)")
+    print(
+        f"Items: {len(schema['items'])} total  ({len(songs)} songs, {len(headers)} non-song)"
+    )
 
     if args.pdf_only:
         _pdf_and_exit(schema, args)
@@ -96,6 +100,7 @@ def run(args: argparse.Namespace) -> None:
     else:
         try:
             from gdocs import get_sermon_highlights
+
             doc_id = args.doc_id or os.environ.get("GDOCS_DOC_ID")
             if not doc_id:
                 print("No doc ID — skipping Google Docs step.")
@@ -152,6 +157,7 @@ def run(args: argparse.Namespace) -> None:
     else:
         try:
             from pp7 import build_and_save_from_schema
+
             output_dir = args.output_dir or os.environ.get("PP7_OUTPUT_DIR")
             saved = build_and_save_from_schema(schema, output_dir=output_dir)
             print(f"Saved {len(saved)} .pro file(s)")
@@ -179,7 +185,7 @@ def _pdf_and_exit(schema: dict, args: argparse.Namespace, wait: bool = True) -> 
     try:
         from review import generate_pdf, send_review_email, wait_for_approval
 
-        svc      = schema["service"]
+        svc = schema["service"]
         pdf_path = generate_pdf(schema, "review_slides.pdf")
 
         to_email = os.environ.get("REVIEW_EMAIL_TO")
@@ -211,26 +217,43 @@ def _pdf_and_exit(schema: dict, args: argparse.Namespace, wait: bool = True) -> 
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="SermonFlow — build ProPresenter slides from Planning Center + Google Docs"
     )
-    p.add_argument("--service-type", default="sunday",
-                   help="Service type name fragment (default: sunday)")
-    p.add_argument("--doc-id",       default=None,
-                   help="Google Doc ID (overrides GDOCS_DOC_ID env var)")
-    p.add_argument("--output-dir",   default=None,
-                   help="Directory for .pro files (overrides PP7_OUTPUT_DIR)")
-    p.add_argument("--schema",       default=None,
-                   help="Load existing service_schema.json instead of fetching")
-    p.add_argument("--skip-gdocs",   action="store_true")
-    p.add_argument("--skip-ai",      action="store_true")
-    p.add_argument("--skip-pp7",     action="store_true")
-    p.add_argument("--skip-review",  action="store_true")
-    p.add_argument("--no-wait",      action="store_true",
-                   help="Send review email but don't block waiting for approval")
-    p.add_argument("--pdf-only",     action="store_true",
-                   help="Generate review PDF from existing schema and exit")
+    p.add_argument(
+        "--service-type",
+        default="sunday",
+        help="Service type name fragment (default: sunday)",
+    )
+    p.add_argument(
+        "--doc-id", default=None, help="Google Doc ID (overrides GDOCS_DOC_ID env var)"
+    )
+    p.add_argument(
+        "--output-dir",
+        default=None,
+        help="Directory for .pro files (overrides PP7_OUTPUT_DIR)",
+    )
+    p.add_argument(
+        "--schema",
+        default=None,
+        help="Load existing service_schema.json instead of fetching",
+    )
+    p.add_argument("--skip-gdocs", action="store_true")
+    p.add_argument("--skip-ai", action="store_true")
+    p.add_argument("--skip-pp7", action="store_true")
+    p.add_argument("--skip-review", action="store_true")
+    p.add_argument(
+        "--no-wait",
+        action="store_true",
+        help="Send review email but don't block waiting for approval",
+    )
+    p.add_argument(
+        "--pdf-only",
+        action="store_true",
+        help="Generate review PDF from existing schema and exit",
+    )
     return p
 
 
