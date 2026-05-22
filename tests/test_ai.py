@@ -14,10 +14,10 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "test_key")
 
 import ai
 
-
 # ---------------------------------------------------------------------------
 # _parse_json_response
 # ---------------------------------------------------------------------------
+
 
 def test_parse_json_plain():
     raw = '{"slides": [{"text": "Hello", "section_label": "Verse 1"}]}'
@@ -52,6 +52,7 @@ def test_parse_json_raises_on_invalid():
 # format_lyric_slides
 # ---------------------------------------------------------------------------
 
+
 def _make_message(json_body: dict):
     msg = MagicMock()
     msg.content = [MagicMock(text=json.dumps(json_body))]
@@ -63,13 +64,26 @@ def test_format_lyric_slides_returns_slides(mock_client_fn):
     client = MagicMock()
     mock_client_fn.return_value = client
     client.messages.create.return_value = _make_message(
-        {"slides": [
-            {"text": "Amazing grace how sweet the sound", "section_label": "Verse 1 (1/2)"},
-            {"text": "That saved a wretch like me",        "section_label": "Verse 1 (2/2)"},
-        ]}
+        {
+            "slides": [
+                {
+                    "text": "Amazing grace how sweet the sound",
+                    "section_label": "Verse 1 (1/2)",
+                },
+                {
+                    "text": "That saved a wretch like me",
+                    "section_label": "Verse 1 (2/2)",
+                },
+            ]
+        }
     )
 
-    sections = [{"label": "Verse 1", "lyrics": "Amazing grace how sweet the sound\nThat saved a wretch like me"}]
+    sections = [
+        {
+            "label": "Verse 1",
+            "lyrics": "Amazing grace how sweet the sound\nThat saved a wretch like me",
+        }
+    ]
     result = ai.format_lyric_slides("Amazing Grace", sections)
 
     assert len(result) == 2
@@ -90,7 +104,9 @@ def test_format_lyric_slides_prompt_includes_title(mock_client_fn):
     mock_client_fn.return_value = client
     client.messages.create.return_value = _make_message({"slides": []})
 
-    ai.format_lyric_slides("Holy Spirit", [{"label": "Verse 1", "lyrics": "Come fill this place"}])
+    ai.format_lyric_slides(
+        "Holy Spirit", [{"label": "Verse 1", "lyrics": "Come fill this place"}]
+    )
 
     call_kwargs = client.messages.create.call_args
     user_prompt = call_kwargs.kwargs["messages"][0]["content"]
@@ -101,21 +117,26 @@ def test_format_lyric_slides_prompt_includes_title(mock_client_fn):
 # generate_sermon_slides
 # ---------------------------------------------------------------------------
 
+
 @patch("ai._get_client")
 def test_generate_sermon_slides_returns_slides(mock_client_fn):
     client = MagicMock()
     mock_client_fn.return_value = client
     client.messages.create.return_value = _make_message(
-        {"slides": [
-            {"text": "God's Grace Is Sufficient"},
-            {"text": "Justified by Faith"},
-        ]}
+        {
+            "slides": [
+                {"text": "God's Grace Is Sufficient"},
+                {"text": "Justified by Faith"},
+            ]
+        }
     )
 
-    result = ai.generate_sermon_slides([
-        "God's grace is sufficient for every need",
-        "We are justified by faith not by works",
-    ])
+    result = ai.generate_sermon_slides(
+        [
+            "God's grace is sufficient for every need",
+            "We are justified by faith not by works",
+        ]
+    )
 
     assert len(result) == 2
     assert result[0]["text"] == "God's Grace Is Sufficient"
@@ -132,29 +153,36 @@ def test_generate_sermon_slides_empty(mock_client_fn):
 # format_schema_slides
 # ---------------------------------------------------------------------------
 
+
 @patch("ai.format_lyric_slides")
 def test_format_schema_slides_populates_sections(mock_format):
     mock_format.return_value = [
         {"text": "Amazing grace how sweet", "section_label": "Verse 1 (1/1)"},
-        {"text": "My chains are gone",      "section_label": "Chorus (1/1)"},
+        {"text": "My chains are gone", "section_label": "Chorus (1/1)"},
     ]
 
     schema = {
-        "items": [{
-            "item_type": "song",
-            "title": "Amazing Grace",
-            "song": {
-                "sections": [
-                    {"label": "Verse 1", "lyrics": "Amazing grace...", "slides": []},
-                    {"label": "Chorus",  "lyrics": "My chains...",     "slides": []},
-                ]
+        "items": [
+            {
+                "item_type": "song",
+                "title": "Amazing Grace",
+                "song": {
+                    "sections": [
+                        {
+                            "label": "Verse 1",
+                            "lyrics": "Amazing grace...",
+                            "slides": [],
+                        },
+                        {"label": "Chorus", "lyrics": "My chains...", "slides": []},
+                    ]
+                },
             }
-        }]
+        ]
     }
 
     result = ai.format_schema_slides(schema)
 
-    verse_slides  = result["items"][0]["song"]["sections"][0]["slides"]
+    verse_slides = result["items"][0]["song"]["sections"][0]["slides"]
     chorus_slides = result["items"][0]["song"]["sections"][1]["slides"]
     assert "Amazing grace how sweet" in verse_slides
     assert "My chains are gone" in chorus_slides
@@ -179,16 +207,18 @@ def test_format_schema_slides_fallback_appends_to_last_section(mock_format):
     ]
 
     schema = {
-        "items": [{
-            "item_type": "song",
-            "title": "Song",
-            "song": {
-                "sections": [
-                    {"label": "Verse 1", "lyrics": "...", "slides": []},
-                    {"label": "Chorus",  "lyrics": "...", "slides": []},
-                ]
+        "items": [
+            {
+                "item_type": "song",
+                "title": "Song",
+                "song": {
+                    "sections": [
+                        {"label": "Verse 1", "lyrics": "...", "slides": []},
+                        {"label": "Chorus", "lyrics": "...", "slides": []},
+                    ]
+                },
             }
-        }]
+        ]
     }
 
     ai.format_schema_slides(schema)
