@@ -12,7 +12,6 @@ Options:
   --skip-ai             Skip AI formatting (pass raw lyrics through)
   --skip-pp7            Skip ProPresenter file generation
   --skip-review         Skip PDF generation and review email
-  --no-wait             Send review email but don't wait for approval
   --schema PATH         Load an existing service_schema.json instead of fetching
   --pdf-only            Generate review PDF from existing schema, then exit
 
@@ -112,37 +111,25 @@ def run(args: argparse.Namespace) -> None:
             print("Continuing without sermon slides.")
 
     # ------------------------------------------------------------------
-    # Step 3: AI formatting
+    # Step 3: Slides
     # ------------------------------------------------------------------
-    _step(3, "AI — format lyric slides + generate sermon slides")
+    _step(3, "Slides — promote lyrics + attach sermon highlights")
 
-    if args.skip_ai:
-        print("Skipped (--skip-ai) — using raw lyrics as slide text")
-        # Promote raw lyrics to slides without AI formatting
+    # Lyrics are manual — promote raw PCO lyrics to slides
+    for item in schema["items"]:
+        if item["item_type"] != "song":
+            continue
+        for section in item.get("song", {}).get("sections", []):
+            if not section["slides"] and section["lyrics"]:
+                section["slides"] = [section["lyrics"]]
+
+    # Attach highlights directly to the "Message" item as slides (raw, no AI)
+    if highlights:
         for item in schema["items"]:
-            if item["item_type"] != "song":
-                continue
-            for section in item.get("song", {}).get("sections", []):
-                if not section["slides"] and section["lyrics"]:
-                    section["slides"] = [section["lyrics"]]
-    else:
-        try:
-            from ai import format_schema_slides, generate_sermon_slides
-
-            print("Formatting lyric slides…")
-            schema = format_schema_slides(schema)
-
-            if highlights:
-                print("Generating sermon slides…")
-                sermon_slides = generate_sermon_slides(highlights)
-                # Attach sermon slides to the first non-song item that has no slides
-                for item in schema["items"]:
-                    if item["item_type"] != "song" and not item["slides_to_generate"]:
-                        item["slides_to_generate"] = [s["text"] for s in sermon_slides]
-                        break
-        except Exception as e:
-            print(f"AI step failed: {e}")
-            print("Continuing with unformatted slides.")
+            if item.get("title") == "Message":
+                item["slides_to_generate"] = highlights
+                print(f"Attached {len(highlights)} highlight(s) to Message")
+                break
 
     _save_schema(schema, schema_path)
     print(f"Schema updated → {schema_path}")
@@ -178,12 +165,12 @@ def run(args: argparse.Namespace) -> None:
         print("Skipped (--skip-review)")
         return
 
-    _pdf_and_exit(schema, args, wait=(not args.no_wait))
+    _pdf_and_exit(schema, args)
 
 
-def _pdf_and_exit(schema: dict, args: argparse.Namespace, wait: bool = True) -> None:
+def _pdf_and_exit(schema: dict, args: argparse.Namespace) -> None:
     try:
-        from review import generate_pdf, send_review_email, wait_for_approval
+        from review import generate_pdf, send_review_email
 
         svc = schema["service"]
         pdf_path = generate_pdf(schema, "review_slides.pdf")
@@ -197,17 +184,9 @@ def _pdf_and_exit(schema: dict, args: argparse.Namespace, wait: bool = True) -> 
             )
         else:
             print("Email not configured — skipping send.")
-            print(f"Review PDF is at: {pdf_path}")
 
-        if wait:
-            approved = wait_for_approval()
-            if not approved:
-                print("Pipeline aborted — not approved.")
-                sys.exit(1)
-            print("Approved! Pipeline complete.")
-        else:
-            print(f"Review PDF: {pdf_path}")
-            print("Pipeline complete (no-wait mode).")
+        print(f"Review PDF: {pdf_path}")
+        print("Pipeline complete.")
 
     except Exception as e:
         print(f"Review step failed: {e}")
@@ -244,11 +223,6 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--skip-ai", action="store_true")
     p.add_argument("--skip-pp7", action="store_true")
     p.add_argument("--skip-review", action="store_true")
-    p.add_argument(
-        "--no-wait",
-        action="store_true",
-        help="Send review email but don't block waiting for approval",
-    )
     p.add_argument(
         "--pdf-only",
         action="store_true",

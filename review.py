@@ -17,7 +17,6 @@ For Gmail: use an App Password (myaccount.google.com → Security → App Passwo
 
 import os
 import smtplib
-import time
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -206,47 +205,6 @@ def send_review_email(
         smtp.send_message(msg)
 
     print(f"Review email sent to {to_email}")
-
-
-# ---------------------------------------------------------------------------
-# Approval gate
-# ---------------------------------------------------------------------------
-
-_APPROVED_FLAG = Path("APPROVED")
-_REJECTED_FLAG = Path("REJECTED")
-
-
-def wait_for_approval(timeout_secs: int = 3600, poll_secs: int = 30) -> bool:
-    """
-    Block until a human creates an APPROVED or REJECTED file in this directory,
-    or until timeout_secs elapses.
-
-    Returns True if approved, False if rejected or timed out.
-
-    To approve from the command line:  touch APPROVED
-    To reject:                         touch REJECTED
-    """
-    print(f"Waiting for approval (timeout {timeout_secs}s)…")
-    print("  Create an 'APPROVED' file here to proceed, or 'REJECTED' to abort.")
-
-    _APPROVED_FLAG.unlink(missing_ok=True)
-    _REJECTED_FLAG.unlink(missing_ok=True)
-
-    elapsed = 0
-    while elapsed < timeout_secs:
-        if _APPROVED_FLAG.exists():
-            _APPROVED_FLAG.unlink(missing_ok=True)
-            print("Approved!")
-            return True
-        if _REJECTED_FLAG.exists():
-            _REJECTED_FLAG.unlink(missing_ok=True)
-            print("Rejected.")
-            return False
-        time.sleep(poll_secs)
-        elapsed += poll_secs
-
-    print(f"Approval timed out after {timeout_secs}s.")
-    return False
 
 
 # ---------------------------------------------------------------------------
