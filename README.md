@@ -171,3 +171,14 @@ Times out after 1 hour.
 | `service_schema.json` | Generated PCO service data |
 | `review_slides.pdf` | Generated review PDF |
 | `.env` | Local environment variables |
+
+## decode things
+
+```
+ protoc \
+    --proto_path=ProPresenter7-Proto/Proto \
+    --decode rv.data.Presentation \
+    ProPresenter7-Proto/Proto/presentation.proto \
+    < YourFile.pro \
+    > dump.txt
+```
